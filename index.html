@@ -3,19 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+
+    <style>
+        .black {
+            background: black;
+        }
+
+        .red {
+            background: red;
+        }
+
+        .green {
+            background: green;
+        }
+
+        .blue {
+            background: blue;
+        }
+
+        .yellow {
+            background: yellow;
+        }
+    </style>
 </head>
 <body>
 
-<input type="text" id="i1" r-value="val" r-class="cls">
-<input type="text" id="i2" r-value="val2" r-class="cls2">
+<input r-reactive type="text" r-value="val">
+<input r-reactive type="text" r-value="val">
+<input r-reactive type="text" r-value="valaa" r-placeholder="valaa">
 
-<script src="reactiveprop.js"></script>
+<input r-reactive type="text" r-class="cls" r-value="cls">
+
+<br><br>
+<label>select background:</label>
+<select id="bg-selector" r-value="cls">
+    <option value="red">Red</option>
+    <option value="blue">Blue</option>
+    <option value="yellow">yellow</option>
+</select>
+
+
+<script src="ReactiveProp.js"></script>
 
 <script>
-
-    var input = new ReactiveElement('#i1');
-    var input2 = new ReactiveElement('#i2');
-
+    var selector = new ReactiveElement('#bg-selector');
 </script>
+
 </body>
 </html>

@@ -1,9 +1,19 @@
 class ReactiveProp {
+    static _DEFINED = {};
+    static update() {
+        for (const key in this._DEFINED) {
+            const prop: ReactiveProp = this._DEFINED[key];
+
+            prop.update();
+        }
+    }
+
     private _element = null;
     private _definitionName = '';
     private _prop = '';
     private _reactiveName = '';
     private _value = '';
+    private _bound = [];
 
     constructor(element, definitionName: string, prop: string, reactiveName: string, initValue = '') {
         this._element = element;
@@ -12,6 +22,13 @@ class ReactiveProp {
         this._reactiveName = reactiveName;
 
         this.setValue(initValue);
+
+        if (ReactiveProp._DEFINED[reactiveName] === undefined) {
+            ReactiveProp._DEFINED[reactiveName] = this;
+        }
+        else {
+            this._bound.push(ReactiveProp._DEFINED[reactiveName]._element);
+        }
     }
 
     getValue() {
@@ -25,6 +42,26 @@ class ReactiveProp {
 
     setValue(value) {
         this._value = value;
+
+        if (this._element._element.getAttribute(this._prop) === null) {
+            if (this._element._element[this._prop] !== undefined) {
+                this._element._element[this._prop] = value;
+            }
+        }
+        else {
+            this._element._element.setAttribute(this._prop, value);
+        }
+    }
+
+    bind(element) {
+        this._bound.push(element);
+    }
+
+    update() {
+        for (const element of this._bound) {
+            element.setAttrib(this);
+        }
+        this._element.setAttrib(this);
     }
 }
 
@@ -40,10 +77,26 @@ class ReactiveElement {
         }
 
         this._element = el;
-        this._buildProps();
+
+        el.addEventListener('change', () => {
+            for (const key in this._propList) {
+                const prop = this._propList[key];
+
+                prop.update();
+            }
+        });
+        el.addEventListener('input', () => {
+            for (const key in this._propList) {
+                const prop = this._propList[key];
+
+                prop.update();
+            }
+        });
+
+        this._mapProps();
     }
 
-    private _buildProps() {
+    private _mapProps() {
         const propMapCopy = { ...this._element.attributes };
         propMapCopy.length = Object.keys(propMapCopy).length;
 
@@ -57,8 +110,12 @@ class ReactiveElement {
                 if (initValue === null) {
                     initValue = '';
                 }
-                this._propList[reactiveName] = new ReactiveProp(this, name, propName, reactiveName, initValue);
+
+                let propObj = new ReactiveProp(this, name, propName, reactiveName, initValue);
+                this._propList[reactiveName] = propObj;
+
                 this._defineReactiveProp(reactiveName);
+                this._bindElement(reactiveName);
 
                 this._element.attributes.removeNamedItem(name);
             }
@@ -68,26 +125,35 @@ class ReactiveElement {
     private _defineReactiveProp(reactiveName) {
         Object.defineProperty(this, reactiveName, {
             get: () => {
-                const _rprop = this._propList[reactiveName];
+                const _rprop: ReactiveProp = ReactiveProp._DEFINED[reactiveName];
 
                 if (_rprop === null) {
                     throw 'Tried to access a none existing reactive property';
                 }
 
-                return this._propList[reactiveName].getValue();
+                return _rprop.getValue();
             },
             set: (value) => {
-                const _rprop = this._propList[reactiveName];
+                const _rprop: ReactiveProp = ReactiveProp._DEFINED[reactiveName];
 
                 if (_rprop === null) {
                     throw 'Tried to access a none existing reactive property';
                 }
 
-                this._propList[reactiveName].setValue(value);
+                _rprop.setValue(value);
+                _rprop.update();
             },
             enumerable: true,
             configurable: true
         });
+    }
+
+    private _bindElement(reactiveName) {
+        let defined: ReactiveProp = ReactiveProp._DEFINED[reactiveName];
+
+        if (defined !== undefined) {
+            defined.bind(this);
+        }
     }
 
     attrib(name) {
@@ -100,5 +166,13 @@ class ReactiveElement {
         }
 
         return _v;
+    }
+
+    setAttrib(prop) {
+        const value = prop.getValue();
+
+        const propToSet = this._propList[prop._reactiveName];
+
+        propToSet.setValue(value);
     }
 }
