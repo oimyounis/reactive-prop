@@ -24,13 +24,15 @@ var ReactiveProp = /** @class */ (function () {
         this._prop = prop;
         this._reactiveName = reactiveName;
         this.setValue(initValue);
-        if (ReactiveProp._DEFINED[reactiveName] === undefined) {
-            ReactiveProp._DEFINED[reactiveName] = this;
+        if (reactiveName != '') {
+            if (ReactiveProp._DEFINED[reactiveName] === undefined) {
+                ReactiveProp._DEFINED[reactiveName] = this;
+            }
+            else {
+                this._origin = ReactiveProp._DEFINED[reactiveName];
+            }
+            ReactiveProp._DEFINED[reactiveName].bind(this);
         }
-        else {
-            this._origin = ReactiveProp._DEFINED[reactiveName];
-        }
-        ReactiveProp._DEFINED[reactiveName].bind(this);
     }
     ReactiveProp.update = function () {
         for (var key in ReactiveProp._DEFINED) {
@@ -44,33 +46,41 @@ var ReactiveProp = /** @class */ (function () {
     ReactiveProp.prototype.setValue = function (value) {
         if (this._definitionName === 'r-reactive')
             return;
-        if (value === null)
+        if (value === null) {
             return;
-        this._value = value;
-        this._origin && this._origin.setValue(this._value);
-        this._reflect();
+        }
+        var valueChanged = this._value != value;
+        if (valueChanged) {
+            this._value = value;
+            this._origin && this._origin.setValue(this._value);
+        }
+        this._reflect(valueChanged);
     };
-    ReactiveProp.prototype._reflect = function () {
+    ReactiveProp.prototype._reflect = function (valueChanged) {
+        if (valueChanged === void 0) { valueChanged = true; }
         if (this._isDirective()) {
-            this._handleDirective();
+            this._handleDirective(valueChanged);
         }
         else {
-            if (this._element._element[this._prop] === undefined) {
-                this._element._element.setAttribute(this._prop, this._value);
-            }
-            else {
-                this._element._element[this._prop] = this._value;
+            if (valueChanged) {
+                if (this._element._element[this._prop] === undefined) {
+                    this._element._element.setAttribute(this._prop, this._value);
+                }
+                else {
+                    this._element._element[this._prop] = this._value;
+                }
             }
         }
     };
     ReactiveProp.prototype._isDirective = function () {
         return ReactiveProp._DIRECTIVES.indexOf(this._prop) !== -1;
     };
-    ReactiveProp.prototype._handleDirective = function () {
-        if (this._prop === 'html') {
+    ReactiveProp.prototype._handleDirective = function (valueChanged) {
+        if (valueChanged === void 0) { valueChanged = true; }
+        if (this._prop === 'html' && valueChanged) {
             this._element._element.innerHTML = this._value;
         }
-        else if (this._prop === 'text') {
+        else if (this._prop === 'text' && valueChanged) {
             this._element._element.innerText = this._value;
         }
         else if (this._prop === 'visible') {
@@ -85,7 +95,8 @@ var ReactiveProp = /** @class */ (function () {
     ReactiveProp.prototype._updateValue = function () {
         var val = this._element.attrib(this._prop);
         var changed = val != this._value;
-        this.setValue(val);
+        if (changed)
+            this.setValue(val);
         return changed;
     };
     ReactiveProp.prototype.bind = function (prop) {
@@ -94,7 +105,8 @@ var ReactiveProp = /** @class */ (function () {
     ReactiveProp.prototype._updateBound = function () {
         for (var _i = 0, _a = this._bound; _i < _a.length; _i++) {
             var prop = _a[_i];
-            prop.setValue(this._element.attrib(this._prop));
+            // prop.setValue(this._element.attrib(this._prop));
+            prop.setValue(this._value);
         }
     };
     ReactiveProp._DEFINED = {};
@@ -156,8 +168,10 @@ var ReactiveElement = /** @class */ (function () {
                 if (_rprop === null) {
                     throw 'Tried to access a none existing reactive property';
                 }
-                _rprop.setValue(value);
-                _rprop._updateBound();
+                if (value != _rprop.getValue()) {
+                    _rprop.setValue(value);
+                    _rprop._updateBound();
+                }
             },
             enumerable: true,
             configurable: true
@@ -199,10 +213,59 @@ var ReactiveElement = /** @class */ (function () {
     };
     return ReactiveElement;
 }());
-var reactiveElements = document.querySelectorAll('[r-reactive]');
-if (reactiveElements) {
-    for (var _i = 0, reactiveElements_1 = reactiveElements; _i < reactiveElements_1.length; _i++) {
-        var el = reactiveElements_1[_i];
-        new ReactiveElement(el);
+var ReactiveApp = /** @class */ (function () {
+    function ReactiveApp(opts) {
+        this._main = null;
+        this.$data = {};
+        if (!opts.hasOwnProperty('main')) {
+            throw 'No app function provided';
+        }
+        this._init();
+        var appFunc = opts.main;
+        appFunc.call(this);
+        this._main = appFunc;
     }
-}
+    ReactiveApp.prototype._init = function () {
+        var reactiveElements = document.querySelectorAll('[r-reactive]');
+        if (reactiveElements) {
+            for (var _i = 0, reactiveElements_1 = reactiveElements; _i < reactiveElements_1.length; _i++) {
+                var el = reactiveElements_1[_i];
+                new ReactiveElement(el);
+            }
+            for (var key in ReactiveProp._DEFINED) {
+                var prop = ReactiveProp._DEFINED[key];
+                this._defineReactiveProp(key, prop);
+            }
+        }
+    };
+    ReactiveApp.prototype._defineReactiveProp = function (reactiveName, reactiveProp) {
+        Object.defineProperty(this.$data, reactiveName, {
+            get: function () {
+                var _rprop = reactiveProp;
+                if (_rprop === null) {
+                    throw 'Tried to access a none existing reactive property';
+                }
+                return _rprop.getValue();
+            },
+            set: function (value) {
+                var _rprop = reactiveProp;
+                if (_rprop === null) {
+                    throw 'Tried to access a none existing reactive property';
+                }
+                if (value != _rprop.getValue()) {
+                    _rprop.setValue(value);
+                    _rprop._updateBound();
+                }
+            },
+            enumerable: true,
+            configurable: true
+        });
+    };
+    return ReactiveApp;
+}());
+// const reactiveElements: any = document.querySelectorAll('[r-reactive]');
+// if (reactiveElements) {
+//     for (const el of reactiveElements) {
+//         new ReactiveElement(el);
+//     }
+// }

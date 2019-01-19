@@ -32,9 +32,11 @@
 </head>
 <body>
 
-<input id="inputval" r-visible="vis" type="text" r-value="val">
+<input r-reactive type="checkbox" id="show-first" r-checked="vis"><label for="show-first">show first input</label> <br>
+
+<input r-reactive id="inputval" r-visible="vis" type="text" r-value="val" placeholder="first input">
 <input r-reactive type="text" r-value="val">
-<input r-reactive type="text" r-value="valaa" r-placeholder="valaa">
+<input r-reactive type="text" r-value="placeh" r-placeholder="placeh">
 
 <input r-reactive type="text" r-class="cls" r-value="cls">
 
@@ -55,7 +57,19 @@
 <script src="ReactiveProp.js"></script>
 
 <script>
-    var inputval = new ReactiveElement('#inputval');
+
+    var app = new ReactiveApp({
+        main: function() {
+            this.$data.val = 'init value';
+            this.$data.vis = true;
+            this.$data.cls = 'yellow';
+            this.$data.html = '<h1>Welcome</h1>' +
+                '<h3 style="text-transform: uppercase">This is a test</h3>' +
+                '<p>This test aims to test setting initial values for instance variables..</p>' +
+                '<p>If it worked correctly check this checkbox: <input type="checkbox"></p>';
+        }
+    });
+
 </script>
 
 </body>
