@@ -1,13 +1,4 @@
-# NativeScript
-hooks/
 node_modules/
-platforms/
-
-# NativeScript Template
-*.js.map
-*.js
-!webpack.config.js
-*.css
 
 # Logs
 logs
