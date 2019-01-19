@@ -31,19 +31,11 @@ class ReactiveProp {
         else {
             this._origin = ReactiveProp._DEFINED[reactiveName];
         }
-        // else {
-        //     this._bound.push(ReactiveProp._DEFINED[reactiveName]._element);
-        // }
 
         ReactiveProp._DEFINED[reactiveName].bind(this);
     }
 
     getValue() {
-        // let _value = this._element.attrib(this._prop);
-        // if (_value === null) {
-        //     _value = '';
-        // }
-        // this._value = _value;
         return this._value;
     }
 
@@ -55,16 +47,18 @@ class ReactiveProp {
         this._origin && this._origin.setValue(this._value);
 
         if (this._element._element[this._prop] === undefined) {
-            // if (this._element._element.getAttribute(this._prop) !== null) {
             this._element._element.setAttribute(this._prop, value);
-            // }
         }
         else {
             this._element._element[this._prop] = value;
         }
     }
     _updateValue() {
-        this.setValue(this._element.attrib(this._prop));
+        const val = this._element.attrib(this._prop);
+        const changed = val != this._value;
+        this.setValue(val);
+
+        return changed;
     }
 
     bind(prop) {
@@ -72,13 +66,9 @@ class ReactiveProp {
     }
 
     _updateBound() {
-        // this.updateValue();
         for (const prop of this._bound) {
-            // element.setAttrib(this);
             prop.setValue(this._element.attrib(this._prop));
         }
-        // for (const element of this._bound) {
-        // this._element.setAttrib(this);
     }
 }
 
@@ -87,9 +77,9 @@ class ReactiveElement {
     private _propList = {};
 
     constructor(selector) {
+        let el = null;
         if (typeof selector === 'string'){
-            const el = document.querySelector(selector);
-
+            el = document.querySelector(selector);
             if (el === null) {
                 throw `Element with selector "${selector}" does not exist`;
             }
@@ -168,52 +158,35 @@ class ReactiveElement {
         return _v;
     }
 
-    setAttrib(prop) {
-        const value = prop.getValue();
-
-        for (const _prop of this._propList[prop._reactiveName]) {
-            _prop.setValue(value);
-        }
-    }
-
     private _initEvents() {
-        this._element.addEventListener('change', (e) => {
-            // for (const key in this._propList) {
-            //     const props = this._propList[key];
-            //
-            //     for (const prop of props) {
-            //         prop._update();
-            //     }
-            // }
+        this._element.addEventListener('change', () => {
             for (const key in this._propList) {
                 const props = this._propList[key];
 
                 for (const prop of props) {
-                    prop._updateValue();
+                    if (prop._updateValue()) {
+                        break;
+                    }
                 }
             }
             ReactiveProp.update();
         });
-        this._element.addEventListener('input', (e) => {
+        this._element.addEventListener('input', () => {
             for (const key in this._propList) {
                 const props = this._propList[key];
 
                 for (const prop of props) {
-                    prop._updateValue();
+                    if (prop._updateValue()) {
+                        break;
+                    }
                 }
             }
-            // for (const key in this._propList) {
-            //     const props = this._propList[key];
-
-                // for (const prop of props) {
             ReactiveProp.update();
-                // }
-            // }
         });
     }
 }
 
-const reactiveElements = document.querySelectorAll('[ r-reactive]');
+const reactiveElements: any = document.querySelectorAll('[r-reactive]');
 if (reactiveElements) {
     for (const el of reactiveElements) {
         new ReactiveElement(el);
