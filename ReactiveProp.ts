@@ -8,6 +8,8 @@ class ReactiveProp {
         }
     }
 
+    static _DIRECTIVES = ['html', 'text', 'visible'];
+
     private _element = null;
     private _definitionName = '';
     private _prop = '';
@@ -43,16 +45,50 @@ class ReactiveProp {
         if (this._definitionName === 'r-reactive')
             return;
 
+        if (value === null)
+            return;
+
         this._value = value;
         this._origin && this._origin.setValue(this._value);
 
-        if (this._element._element[this._prop] === undefined) {
-            this._element._element.setAttribute(this._prop, value);
+        this._reflect();
+    }
+
+    private _reflect() {
+        if (this._isDirective()) {
+            this._handleDirective();
         }
         else {
-            this._element._element[this._prop] = value;
+            if (this._element._element[this._prop] === undefined) {
+                this._element._element.setAttribute(this._prop, this._value);
+            }
+            else {
+                this._element._element[this._prop] = this._value;
+            }
         }
     }
+
+    private _isDirective() {
+        return ReactiveProp._DIRECTIVES.indexOf(this._prop) !== -1;
+    }
+
+    private _handleDirective() {
+        if (this._prop === 'html') {
+            this._element._element.innerHTML = this._value;
+        }
+        else if (this._prop === 'text') {
+            this._element._element.innerText = this._value;
+        }
+        else if (this._prop === 'visible') {
+            if (this._value == true) {
+                this._element._element.style['display'] = '';
+            }
+            else if (this._value == false) {
+                this._element._element.style['display'] = 'none';
+            }
+        }
+    }
+
     _updateValue() {
         const val = this._element.attrib(this._prop);
         const changed = val != this._value;

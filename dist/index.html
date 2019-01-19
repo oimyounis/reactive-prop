@@ -24,11 +24,15 @@
         .yellow {
             background: yellow;
         }
+
+        div, textarea {
+            width: 100%;
+        }
     </style>
 </head>
 <body>
 
-<input r-reactive type="text" r-value="val">
+<input id="inputval" r-visible="vis" type="text" r-value="val">
 <input r-reactive type="text" r-value="val">
 <input r-reactive type="text" r-value="valaa" r-placeholder="valaa">
 
@@ -36,17 +40,22 @@
 
 <br><br>
 <label>select background:</label>
-<select id="bg-selector" r-value="cls">
+<select r-reactive id="bg-selector" r-value="cls">
     <option value="red">Red</option>
     <option value="blue">Blue</option>
     <option value="yellow">yellow</option>
 </select>
 
+<br><br>
+<hr>
+<textarea r-reactive r-value="html" rows="8"></textarea>
+<hr>
+<div r-reactive r-html="html"></div>
 
-<script src="ReactiveProp.min.js"></script>
+<script src="ReactiveProp.js"></script>
 
 <script>
-    var selector = new ReactiveElement('#bg-selector');
+    var inputval = new ReactiveElement('#inputval');
 </script>
 
 </body>

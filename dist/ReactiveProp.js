@@ -44,13 +44,42 @@ var ReactiveProp = /** @class */ (function () {
     ReactiveProp.prototype.setValue = function (value) {
         if (this._definitionName === 'r-reactive')
             return;
+        if (value === null)
+            return;
         this._value = value;
         this._origin && this._origin.setValue(this._value);
-        if (this._element._element[this._prop] === undefined) {
-            this._element._element.setAttribute(this._prop, value);
+        this._reflect();
+    };
+    ReactiveProp.prototype._reflect = function () {
+        if (this._isDirective()) {
+            this._handleDirective();
         }
         else {
-            this._element._element[this._prop] = value;
+            if (this._element._element[this._prop] === undefined) {
+                this._element._element.setAttribute(this._prop, this._value);
+            }
+            else {
+                this._element._element[this._prop] = this._value;
+            }
+        }
+    };
+    ReactiveProp.prototype._isDirective = function () {
+        return ReactiveProp._DIRECTIVES.indexOf(this._prop) !== -1;
+    };
+    ReactiveProp.prototype._handleDirective = function () {
+        if (this._prop === 'html') {
+            this._element._element.innerHTML = this._value;
+        }
+        else if (this._prop === 'text') {
+            this._element._element.innerText = this._value;
+        }
+        else if (this._prop === 'visible') {
+            if (this._value == true) {
+                this._element._element.style['display'] = '';
+            }
+            else if (this._value == false) {
+                this._element._element.style['display'] = 'none';
+            }
         }
     };
     ReactiveProp.prototype._updateValue = function () {
@@ -69,6 +98,7 @@ var ReactiveProp = /** @class */ (function () {
         }
     };
     ReactiveProp._DEFINED = {};
+    ReactiveProp._DIRECTIVES = ['html', 'text', 'visible'];
     return ReactiveProp;
 }());
 var ReactiveElement = /** @class */ (function () {
